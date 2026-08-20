@@ -1,0 +1,35 @@
+{
+  "name": "otp-sanly",
+  "version": "1.0.0",
+  "description": "Official Node.js/TypeScript SDK for OTP Sanly (otp.sanly.dev) — SMS & Email OTP for Turkmenistan",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["otp", "sms", "email", "verification", "turkmenistan", "2fa", "authentication"],
+  "author": "OTP Sanly",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sanly-dev/otp-sanly-node.git"
+  },
+  "homepage": "https://otp.sanly.dev/developers",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
