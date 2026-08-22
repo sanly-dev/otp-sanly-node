@@ -1,5 +1,7 @@
 # OTP Sanly — Node.js / TypeScript SDK
 
+[Türkmençe](README.tk.md) | [Русский](README.ru.md) | English
+
 Official SDK for [OTP Sanly](https://otp.sanly.dev) — SMS & Email OTP authentication for Turkmenistan.
 
 ## Install
