@@ -15,7 +15,8 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
-    "prepublishOnly": "npm run build"
+    "test": "tsx --test tests/*.test.ts",
+    "prepublishOnly": "npm run build && npm test"
   },
   "keywords": ["otp", "sms", "email", "verification", "turkmenistan", "2fa", "authentication"],
   "author": "OTP Sanly",
@@ -27,7 +28,8 @@
   "homepage": "https://otp.sanly.dev/developers",
   "devDependencies": {
     "tsup": "^8.0.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "tsx": "^4.16.0"
   },
   "engines": {
     "node": ">=16"
