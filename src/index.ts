@@ -35,12 +35,27 @@ export interface SendOtpParams {
 
 export interface SendOtpResult {
   success: boolean
+  /** Numeric ID of the created OTP record — pass this to verifyOtp() as `otpId` for extra precision if needed. */
   otpId?: number
+  /** The phone number or email address the OTP was sent to (echoed back). */
   target?: string
+  /** Delivery channel actually used: "sms" | "sms_gateway" | "sms_sandbox" | "email". */
   channel?: string
+  /** ISO 8601 UTC expiry timestamp. */
   expiresAt?: string
+  /** Human-readable expiry timestamp in Turkmenistan local time (Asia/Ashgabat). */
+  expiresAtTM?: string
+  /** Seconds until the code expires. */
   expiresIn?: number
+  /** How many OTPs remain in the API key's current plan/period after this one. */
   remainingOtp?: number
+  /** Which attempt number this is (resending to the same target increments this). */
+  attempt?: number
+  /** Max verify attempts allowed for this code before it locks (currently 3). */
+  maxAttempts?: number
+  /** Whether the SMS was formatted for Android's WebOTP auto-read API (set on your API key's template). */
+  autoRead?: boolean
+  /** Human-readable status message (in Turkmen). */
   message?: string
   error?: string
   /** Only present when using a sandbox API key — the code, returned directly for testing (no real SMS/email is sent). */
@@ -61,8 +76,20 @@ export interface VerifyOtpParams {
 
 export interface VerifyOtpResult {
   success: boolean
-  verified?: boolean
+  /** Human-readable status message (in Turkmen). */
   message?: string
+  /** Numeric ID of the OTP record that was verified. */
+  otpId?: number
+  /** The phone number or email address that was verified (echoed back). */
+  target?: string
+  /** ISO 8601 UTC timestamp of when verification succeeded. */
+  verifiedAt?: string
+  /** Human-readable verification timestamp in Turkmenistan local time (Asia/Ashgabat). */
+  verifiedAtTM?: string
+  /** Delivery channel the original OTP was sent through. */
+  channel?: string
+  /** The `project` label you passed to sendOtp(), if any. */
+  project?: string
   error?: string
 }
 

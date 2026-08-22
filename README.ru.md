@@ -30,7 +30,7 @@ const verified = await sanly.verifyOtp({
   phone: '+99361234567',
   code: '123456',
 })
-if (verified.verified) {
+if (verified.success) {
   // продолжить — код верный
 }
 ```

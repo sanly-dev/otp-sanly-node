@@ -68,10 +68,10 @@ describe('verifyOtp', () => {
     await assert.rejects(() => sanly.verifyOtp({ code: '123456' }))
   })
 
-  test('returns verified:true on success', async () => {
-    mockFetch(200, { success: true, verified: true })
+  test('returns success:true on successful verification', async () => {
+    mockFetch(200, { success: true, message: 'OTP tassyklandy' })
     const sanly = new OtpSanly({ apiKey: 'otpsanly_test' })
     const result = await sanly.verifyOtp({ phone: '+99361234567', code: '123456' })
-    assert.equal(result.verified, true)
+    assert.equal(result.success, true)
   })
 })
