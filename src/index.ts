@@ -58,6 +58,16 @@ export interface SendOtpResult {
   /** Human-readable status message (in Turkmen). */
   message?: string
   error?: string
+  /**
+   * HTTP status code — only present when `success` is `false`. Use this to
+   * tell apart error categories:
+   *  - `401` / `403` — invalid, inactive, or unauthorized API key (a
+   *    configuration problem on your side, not the end user's fault)
+   *  - `400` — bad request (e.g. malformed phone/email)
+   *  - `429` — you're sending too many requests, rate-limited
+   *  - `5xx` — a problem on the OTP Sanly server
+   */
+  status?: number
   /** Only present when using a sandbox API key — the code, returned directly for testing (no real SMS/email is sent). */
   code?: string
   sandbox?: boolean
@@ -91,8 +101,26 @@ export interface VerifyOtpResult {
   /** The `project` label you passed to sendOtp(), if any. */
   project?: string
   error?: string
+  /**
+   * HTTP status code — only present when `success` is `false`. Use this to
+   * tell apart error categories:
+   *  - `401` / `403` — invalid, inactive, or unauthorized API key (a
+   *    configuration problem on your side, not the end user's fault)
+   *  - `400` — wrong/expired code entered by the user
+   *  - `429` — too many verify attempts, rate-limited
+   *  - `5xx` — a problem on the OTP Sanly server
+   */
+  status?: number
 }
 
+/**
+ * Thrown only for transport-level failures — the request never reached the
+ * server or the response could not be parsed at all (network outage, DNS
+ * failure, timeout, etc). Normal API error responses (invalid API key,
+ * wrong code, rate limiting, ...) are NOT thrown — they come back as a
+ * regular result object with `success: false` and a `status` code so you
+ * can branch on them with a plain `if`, no `try/catch` required.
+ */
 export class OtpSanlyError extends Error {
   status: number
   body: unknown
@@ -116,17 +144,35 @@ export class OtpSanly {
     this.baseUrl = (options.baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, '')
   }
 
-  private async request<T>(path: string, body: Record<string, unknown>): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apiKey: this.apiKey, ...body }),
-    })
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok || data?.success === false) {
-      throw new OtpSanlyError(data?.error || `Request failed with status ${res.status}`, res.status, data)
+  /**
+   * Sends the request. Only a transport-level failure (network outage, DNS
+   * failure, response body isn't JSON at all) throws `OtpSanlyError`.
+   * A normal API error response — invalid API key (401/403), bad input
+   * (400), rate limiting (429), server error (5xx) — is returned as a
+   * regular object with `success: false` and `status` set, so callers can
+   * branch with a plain `if` instead of `try/catch`.
+   */
+  private async request<T extends { success?: boolean; status?: number }>(path: string, body: Record<string, unknown>): Promise<T> {
+    let res: Response
+    try {
+      res = await fetch(`${this.baseUrl}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: this.apiKey, ...body }),
+      })
+    } catch (err) {
+      throw new OtpSanlyError(err instanceof Error ? err.message : 'Network request failed', 0, null)
     }
-    return data as T
+    let data: any
+    try {
+      data = await res.json()
+    } catch {
+      throw new OtpSanlyError(`Server returned a non-JSON response (status ${res.status})`, res.status, null)
+    }
+    if (!res.ok || data?.success === false) {
+      return { ...data, success: false, status: res.status } as T
+    }
+    return { ...data, status: res.status } as T
   }
 
   /**

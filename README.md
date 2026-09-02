@@ -47,19 +47,48 @@ console.log(sent.code) // only present for sandbox keys
 
 ## Error handling
 
-Failed requests throw `OtpSanlyError`, which includes the HTTP status and the raw response body:
+Starting with `v2`, normal API errors (invalid API key, wrong code, too
+many attempts) are **not thrown** — they're returned as a regular
+`{ success:false, status, error }` object, so you can branch on `status`:
+
+```ts
+const result = await sanly.sendOtp({ phone: '+99361234567' })
+
+if (!result.success) {
+  if (result.status === 401 || result.status === 403) {
+    // Your API key is invalid, inactive, or out of balance — a config issue
+  } else if (result.status === 400) {
+    // The user supplied bad input (malformed phone/email)
+  } else if (result.status === 429) {
+    // Too many attempts — retry later
+  } else {
+    // Unexpected server-side error (5xx)
+  }
+  console.error(result.status, result.error)
+  return
+}
+```
+
+`OtpSanlyError` is thrown only for **network-level failures** (no
+internet, DNS failure, response isn't JSON at all) — catch those with
+`try/catch`:
 
 ```ts
 import { OtpSanly, OtpSanlyError } from 'otp-sanly'
 
 try {
-  await sanly.sendOtp({ phone: '+99361234567' })
+  const result = await sanly.sendOtp({ phone: '+99361234567' })
+  if (!result.success) { /* see the status check above */ }
 } catch (err) {
   if (err instanceof OtpSanlyError) {
-    console.error(err.status, err.message, err.body)
+    console.error('Network error:', err.message)
   }
 }
 ```
+
+> **Upgrading from `v1`:** the previous version threw for every error,
+> including normal API errors. Now only network-level failures throw —
+> always check `result.success` once you have a response.
 
 ## Full API reference
 
