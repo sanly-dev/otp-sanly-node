@@ -47,19 +47,50 @@ console.log(sent.code) // diňe sandbox açarlarda bar bolýar
 
 ## Ýalňyşlyklary dolandyrmak
 
-Şowsuz haýyşlar `OtpSanlyError`-y "taşlaýar" (throw), onda HTTP status kody we çig jogap bar:
+`v2`-den başlap, adaty API ýalňyşlyklary (nädogry API açar, nädogry kod, aşa
+köp synanyşyk) **taşlanmaýar (throw edilmeýär)** — muňa derek adaty
+`{ success:false, status, error }` obýekti gaýdyp gelýär, `status`
+meýdançasyna görä ýalňyşlygyň görnüşini tapawutlandyryp bolýar:
+
+```ts
+const result = await sanly.sendOtp({ phone: '+99361234567' })
+
+if (!result.success) {
+  if (result.status === 401 || result.status === 403) {
+    // API açaryňyz nädogry, işjeň däl ýa-da balans gutaran — konfigurasiýa meselesi
+  } else if (result.status === 400) {
+    // Ulanyjynyň iberen maglumaty nädogry (telefon/email formaty ýalňyş)
+  } else if (result.status === 429) {
+    // Aşa köp synanyşyk — birazdan gaýtadan synanyşyň
+  } else {
+    // Serwer tarapyndaky garaşylmadyk ýalňyşlyk (5xx)
+  }
+  console.error(result.status, result.error)
+  return
+}
+```
+
+`OtpSanlyError` diňe **ulgam derejesindäki** näsazlyklarda (internet ýok,
+DNS işlänok, jogap düýbünden JSON däl) taşlanýar — bulary `try/catch` bilen
+tutmaly:
 
 ```ts
 import { OtpSanly, OtpSanlyError } from 'otp-sanly'
 
 try {
-  await sanly.sendOtp({ phone: '+99361234567' })
+  const result = await sanly.sendOtp({ phone: '+99361234567' })
+  if (!result.success) { /* ýokardaky status barlagyny serediň */ }
 } catch (err) {
   if (err instanceof OtpSanlyError) {
-    console.error(err.status, err.message, err.body)
+    console.error('Ulgam ýalňyşlygy:', err.message)
   }
 }
 ```
+
+> **`v1`-den geçýänler üçin:** öňki wersiýada ähli ýalňyşlyklar (şol
+> sanda adaty API ýalňyşlyklary hem) taşlanýardy. Indi diňe ulgam
+> derejesindäki näsazlyklar taşlanýar — API jogaby geleninde bolsa
+> hemişe `result.success` barlaň.
 
 ## Doly API resminamasy
 

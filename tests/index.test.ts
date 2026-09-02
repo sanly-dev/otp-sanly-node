@@ -40,17 +40,29 @@ describe('sendOtp', () => {
     assert.equal(result.success, true)
   })
 
-  test('throws OtpSanlyError on API error response', async () => {
-    mockFetch(403, { success: false, error: 'API açar işjeň däl. Töleg ediň' })
+  test('throws OtpSanlyError only on transport-level failure (network error)', async () => {
+    globalThis.fetch = (async () => { throw new Error('network down') }) as unknown as typeof fetch
     const sanly = new OtpSanly({ apiKey: 'otpsanly_test' })
     await assert.rejects(
       () => sanly.sendOtp({ phone: '+99361234567' }),
-      (err: unknown) => {
-        assert.ok(err instanceof OtpSanlyError)
-        assert.equal(err.status, 403)
-        return true
-      }
+      (err: unknown) => { assert.ok(err instanceof OtpSanlyError); return true }
     )
+  })
+
+  test('returns success:false + status (does NOT throw) on invalid API key (403)', async () => {
+    mockFetch(403, { success: false, error: 'API açar işjeň däl. Töleg ediň' })
+    const sanly = new OtpSanly({ apiKey: 'otpsanly_test' })
+    const result = await sanly.sendOtp({ phone: '+99361234567' })
+    assert.equal(result.success, false)
+    assert.equal(result.status, 403)
+  })
+
+  test('returns success:false + status:429 on rate limiting', async () => {
+    mockFetch(429, { success: false, error: 'Örän köp synanyşyk. Biraz garaşyň' })
+    const sanly = new OtpSanly({ apiKey: 'otpsanly_test' })
+    const result = await sanly.sendOtp({ phone: '+99361234567' })
+    assert.equal(result.success, false)
+    assert.equal(result.status, 429)
   })
 })
 
@@ -66,6 +78,14 @@ describe('verifyOtp', () => {
   test('throws if neither phone nor email is provided', async () => {
     const sanly = new OtpSanly({ apiKey: 'otpsanly_test' })
     await assert.rejects(() => sanly.verifyOtp({ code: '123456' }))
+  })
+
+  test('returns success:false + status:400 on wrong code', async () => {
+    mockFetch(400, { success: false, error: 'Kod nädogry ýa-da möhleti geçen' })
+    const sanly = new OtpSanly({ apiKey: 'otpsanly_test' })
+    const result = await sanly.verifyOtp({ phone: '+99361234567', code: '000000' })
+    assert.equal(result.success, false)
+    assert.equal(result.status, 400)
   })
 
   test('returns success:true on successful verification', async () => {

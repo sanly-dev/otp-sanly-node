@@ -47,19 +47,49 @@ console.log(sent.code) // доступно только для sandbox-ключ�
 
 ## Обработка ошибок
 
-Неудачные запросы выбрасывают `OtpSanlyError`, который содержит HTTP-статус и полное тело ответа:
+Начиная с `v2`, обычные ошибки API (неверный API-ключ, неверный код,
+слишком много попыток) **не выбрасываются (throw)** — вместо этого
+возвращается обычный объект `{ success:false, status, error }`, по полю
+`status` можно определить тип ошибки:
+
+```ts
+const result = await sanly.sendOtp({ phone: '+99361234567' })
+
+if (!result.success) {
+  if (result.status === 401 || result.status === 403) {
+    // Ваш API-ключ неверен, неактивен или закончился баланс — проблема конфигурации
+  } else if (result.status === 400) {
+    // Пользователь ввёл некорректные данные (неверный формат телефона/email)
+  } else if (result.status === 429) {
+    // Слишком много попыток — повторите чуть позже
+  } else {
+    // Непредвиденная ошибка на сервере (5xx)
+  }
+  console.error(result.status, result.error)
+  return
+}
+```
+
+`OtpSanlyError` выбрасывается только при **сбоях на уровне сети**
+(нет интернета, не работает DNS, ответ вообще не является JSON) —
+их нужно ловить через `try/catch`:
 
 ```ts
 import { OtpSanly, OtpSanlyError } from 'otp-sanly'
 
 try {
-  await sanly.sendOtp({ phone: '+99361234567' })
+  const result = await sanly.sendOtp({ phone: '+99361234567' })
+  if (!result.success) { /* см. проверку status выше */ }
 } catch (err) {
   if (err instanceof OtpSanlyError) {
-    console.error(err.status, err.message, err.body)
+    console.error('Сетевая ошибка:', err.message)
   }
 }
 ```
+
+> **Переход с `v1`:** в предыдущей версии выбрасывались все ошибки,
+> включая обычные ошибки API. Теперь выбрасываются только сетевые
+> сбои — всегда проверяйте `result.success` при получении ответа API.
 
 ## Полная документация API
 

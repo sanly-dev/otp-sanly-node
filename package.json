@@ -1,6 +1,6 @@
 {
   "name": "otp-sanly",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Official Node.js/TypeScript SDK for OTP Sanly (otp.sanly.dev) — SMS & Email OTP for Turkmenistan",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
