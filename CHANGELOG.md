@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.1.0
+
+`Lang` type value for Turkmen changed from `'tk'` to `'tm'` (matches the
+platform's internal language-code convention). This is a type-level
+change only — the API itself remains backward compatible: sending the
+old `'tk'` string still works at runtime (the server falls back to
+Turkmen for any unrecognized `lang` value), so existing integrations
+keep working. TypeScript users passing the literal `'tk'` should update
+to `'tm'` to satisfy the type checker.
+
 ## 2.0.0
 
 **Breaking change:** normal API error responses no longer throw.

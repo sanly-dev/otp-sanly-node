@@ -21,7 +21,7 @@ const sanly = new OtpSanly({ apiKey: process.env.OTP_API_KEY! })
 const sent = await sanly.sendOtp({
   phone: '+99361234567', // Только туркменские номера для SMS. Для доставки в любую страну используйте `email`.
   project: 'Мой сервис',
-  lang: 'ru', // 'tk' | 'ru' | 'en' — на каком языке отправить OTP
+  lang: 'ru', // 'tm' | 'ru' | 'en' — на каком языке отправить OTP
 })
 console.log(sent.otpId, sent.message)
 

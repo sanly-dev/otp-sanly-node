@@ -5,7 +5,7 @@
 
 const DEFAULT_BASE_URL = 'https://otp.sanly.dev'
 
-export type Lang = 'tk' | 'ru' | 'en'
+export type Lang = 'tm' | 'ru' | 'en'
 
 export interface OtpSanlyOptions {
   /** Your API key (starts with "otpsanly_"). Get one at https://otp.sanly.dev/dashboard/api-keys */
@@ -22,9 +22,9 @@ export interface SendOtpParams {
   /** Free-text label shown in your dashboard/webhooks (e.g. your site name). */
   project?: string
   /**
-   * Which language to send the OTP in ("tk" | "ru" | "en"). Selects the
+   * Which language to send the OTP in ("tm" | "ru" | "en"). Selects the
    * 3-language custom message/project label configured on your API key's
-   * template. Defaults to "tk" if omitted.
+   * template. Defaults to "tm" if omitted.
    *
    * IMPORTANT: since this SDK calls the API server-to-server, the
    * Accept-Language HTTP header is unreliable — always pass `lang`
