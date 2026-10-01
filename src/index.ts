@@ -12,6 +12,8 @@ export interface OtpSanlyOptions {
   apiKey: string
   /** Override the base API URL. Defaults to https://otp.sanly.dev */
   baseUrl?: string
+  /** Request timeout in milliseconds. Defaults to 15000 (15 s) — same as the Python, PHP and Go SDKs. */
+  timeoutMs?: number
 }
 
 export interface SendOtpParams {
@@ -51,7 +53,7 @@ export interface SendOtpResult {
   remainingOtp?: number
   /** Which attempt number this is (resending to the same target increments this). */
   attempt?: number
-  /** Max verify attempts allowed for this code before it locks (currently 3). */
+  /** Max verify attempts allowed for this code before it locks (currently 5). */
   maxAttempts?: number
   /** Whether the SMS was formatted for Android's WebOTP auto-read API (set on your API key's template). */
   autoRead?: boolean
@@ -135,6 +137,7 @@ export class OtpSanlyError extends Error {
 export class OtpSanly {
   private apiKey: string
   private baseUrl: string
+  private timeoutMs: number
 
   constructor(options: OtpSanlyOptions) {
     if (!options?.apiKey) {
@@ -142,6 +145,12 @@ export class OtpSanly {
     }
     this.apiKey = options.apiKey
     this.baseUrl = (options.baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, '')
+    // The API key travels in the request body — never send it over plain HTTP
+    // (localhost is allowed for local development).
+    if (!/^https:\/\//i.test(this.baseUrl) && !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(this.baseUrl)) {
+      throw new Error('OtpSanly: baseUrl must start with https://')
+    }
+    this.timeoutMs = options.timeoutMs && options.timeoutMs > 0 ? options.timeoutMs : 15000
   }
 
   /**
@@ -159,6 +168,8 @@ export class OtpSanly {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey: this.apiKey, ...body }),
+        // Without a timeout a stalled connection would hang the caller forever.
+        signal: AbortSignal.timeout(this.timeoutMs),
       })
     } catch (err) {
       throw new OtpSanlyError(err instanceof Error ? err.message : 'Network request failed', 0, null)
@@ -188,6 +199,9 @@ export class OtpSanly {
     if (!params.phone && !params.email) {
       throw new Error('OtpSanly.sendOtp: provide either "phone" or "email"')
     }
+    if (params.phone && params.email) {
+      throw new Error('OtpSanly.sendOtp: provide only one of "phone" or "email", not both')
+    }
     return this.request<SendOtpResult>('/api/send-otp', params as unknown as Record<string, unknown>)
   }
 
@@ -197,7 +211,7 @@ export class OtpSanly {
    * @example
    * ```ts
    * const result = await sanly.verifyOtp({ phone: '+99361234567', code: '123456' })
-   * if (result.verified) { / * proceed * / }
+   * if (result.success) { / * proceed * / }
    * ```
    */
   async verifyOtp(params: VerifyOtpParams): Promise<VerifyOtpResult> {

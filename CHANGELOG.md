@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.0
+
+- Added a request timeout (default 15 s, configurable via `timeoutMs`). Before, a stalled connection could hang the caller forever; the Python, PHP and Go SDKs already had this. A timeout surfaces as `OtpSanlyError` (status `0`).
+- `baseUrl` must now be `https://` (the API key is sent in the request body); `http://localhost` is still allowed for development.
+- `sendOtp()` now throws if both `phone` and `email` are given — the server rejects that combination.
+- Docs: the `verifyOtp` example used `result.verified`, which does not exist — it is `result.success`. Max verify attempts is 5, not 3.
+
 ## 2.1.0
 
 `Lang` type value for Turkmen changed from `'tk'` to `'tm'` (matches the
